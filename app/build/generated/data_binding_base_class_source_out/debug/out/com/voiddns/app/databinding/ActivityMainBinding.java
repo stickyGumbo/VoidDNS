@@ -21,6 +21,9 @@ public final class ActivityMainBinding implements ViewBinding {
   private final ScrollView rootView;
 
   @NonNull
+  public final Button manageListsButton;
+
+  @NonNull
   public final View statusIndicator;
 
   @NonNull
@@ -44,11 +47,13 @@ public final class ActivityMainBinding implements ViewBinding {
   @NonNull
   public final TextView tvTotalQueries;
 
-  private ActivityMainBinding(@NonNull ScrollView rootView, @NonNull View statusIndicator,
-      @NonNull TextView statusSubtitle, @NonNull TextView statusTitle, @NonNull Button toggleButton,
-      @NonNull TextView tvBlockRate, @NonNull TextView tvBlockedCount,
-      @NonNull TextView tvDomainCount, @NonNull TextView tvTotalQueries) {
+  private ActivityMainBinding(@NonNull ScrollView rootView, @NonNull Button manageListsButton,
+      @NonNull View statusIndicator, @NonNull TextView statusSubtitle,
+      @NonNull TextView statusTitle, @NonNull Button toggleButton, @NonNull TextView tvBlockRate,
+      @NonNull TextView tvBlockedCount, @NonNull TextView tvDomainCount,
+      @NonNull TextView tvTotalQueries) {
     this.rootView = rootView;
+    this.manageListsButton = manageListsButton;
     this.statusIndicator = statusIndicator;
     this.statusSubtitle = statusSubtitle;
     this.statusTitle = statusTitle;
@@ -86,6 +91,12 @@ public final class ActivityMainBinding implements ViewBinding {
     // This is done to optimize the compiled bytecode for size and performance.
     int id;
     missingId: {
+      id = R.id.manageListsButton;
+      Button manageListsButton = ViewBindings.findChildViewById(rootView, id);
+      if (manageListsButton == null) {
+        break missingId;
+      }
+
       id = R.id.statusIndicator;
       View statusIndicator = ViewBindings.findChildViewById(rootView, id);
       if (statusIndicator == null) {
@@ -134,8 +145,9 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
-      return new ActivityMainBinding((ScrollView) rootView, statusIndicator, statusSubtitle,
-          statusTitle, toggleButton, tvBlockRate, tvBlockedCount, tvDomainCount, tvTotalQueries);
+      return new ActivityMainBinding((ScrollView) rootView, manageListsButton, statusIndicator,
+          statusSubtitle, statusTitle, toggleButton, tvBlockRate, tvBlockedCount, tvDomainCount,
+          tvTotalQueries);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

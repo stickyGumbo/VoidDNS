@@ -29,6 +29,10 @@
             </intent-filter>
         </service>
 
+        <activity
+            android:name=".ui.BlocklistActivity"
+            android:exported="false" />
+
         <receiver
             android:name=".vpn.BootReceiver"
             android:exported="true">

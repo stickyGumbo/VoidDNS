@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:2:1-42:12
-INJECTED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:2:1-42:12
-INJECTED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:2:1-42:12
-INJECTED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:2:1-42:12
+ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:2:1-46:12
+INJECTED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:2:1-46:12
+INJECTED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:2:1-46:12
+INJECTED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:2:1-46:12
 MERGED from [androidx.databinding:viewbinding:8.2.0] /home/codespace/.gradle/caches/transforms-3/c6e6bb8cacbfe484df00007b8449075a/transformed/jetified-viewbinding-8.2.0/AndroidManifest.xml:2:1-7:12
 MERGED from [com.google.android.material:material:1.11.0] /home/codespace/.gradle/caches/transforms-3/9de0cbe1ab1ed9abc46bafe81231781e/transformed/material-1.11.0/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.appcompat:appcompat-resources:1.6.1] /home/codespace/.gradle/caches/transforms-3/eb81125f1f1fee1fa872c08a389ecde3/transformed/jetified-appcompat-resources-1.6.1/AndroidManifest.xml:17:1-22:12
@@ -80,8 +80,8 @@ MERGED from [androidx.work:work-runtime:2.9.0] /home/codespace/.gradle/caches/tr
 	android:name
 		ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:6:22-78
 application
-ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:8:5-40:19
-INJECTED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:8:5-40:19
+ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:8:5-44:19
+INJECTED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:8:5-44:19
 MERGED from [com.google.android.material:material:1.11.0] /home/codespace/.gradle/caches/transforms-3/9de0cbe1ab1ed9abc46bafe81231781e/transformed/material-1.11.0/AndroidManifest.xml:22:5-20
 MERGED from [com.google.android.material:material:1.11.0] /home/codespace/.gradle/caches/transforms-3/9de0cbe1ab1ed9abc46bafe81231781e/transformed/material-1.11.0/AndroidManifest.xml:22:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] /home/codespace/.gradle/caches/transforms-3/c2d714e364dcdceeff8b3dcb9113ee8d/transformed/constraintlayout-2.0.1/AndroidManifest.xml:9:5-20
@@ -144,18 +144,24 @@ action#android.net.VpnService
 ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:28:17-65
 	android:name
 		ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:28:25-62
-receiver#com.voiddns.app.vpn.BootReceiver
-ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:32:9-38:20
+activity#com.voiddns.app.ui.BlocklistActivity
+ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:32:9-34:40
 	android:exported
-		ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:34:13-36
+		ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:34:13-37
 	android:name
-		ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:33:13-45
+		ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:33:13-49
+receiver#com.voiddns.app.vpn.BootReceiver
+ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:36:9-42:20
+	android:exported
+		ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:38:13-36
+	android:name
+		ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:37:13-45
 intent-filter#action:name:android.intent.action.BOOT_COMPLETED
-ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:35:13-37:29
+ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:39:13-41:29
 action#android.intent.action.BOOT_COMPLETED
-ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:36:17-79
+ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:40:17-79
 	android:name
-		ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:36:25-76
+		ADDED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml:40:25-76
 uses-sdk
 INJECTED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /workspaces/VoidDNS/app/src/main/AndroidManifest.xml

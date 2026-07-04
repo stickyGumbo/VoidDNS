@@ -47,6 +47,10 @@
             </intent-filter>
         </service>
 
+        <activity
+            android:name="com.voiddns.app.ui.BlocklistActivity"
+            android:exported="false" />
+
         <receiver
             android:name="com.voiddns.app.vpn.BootReceiver"
             android:exported="true" >

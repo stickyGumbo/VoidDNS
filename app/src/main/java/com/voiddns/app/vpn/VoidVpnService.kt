@@ -181,7 +181,9 @@ class VoidVpnService : VpnService() {
             val socket = DatagramSocket()
             protect(socket)
             socket.soTimeout = 5000
-            val upstream = InetAddress.getByAddress(byteArrayOf(1, 1, 1, 1))
+            val prefs = getSharedPreferences("voiddns_prefs", MODE_PRIVATE)
+            val upstreamAddr = prefs.getString("upstream_dns", "1.1.1.1") ?: "1.1.1.1"
+            val upstream = InetAddress.getByName(upstreamAddr)
             socket.send(DatagramPacket(query, query.size, upstream, 53))
 
             val responseBuffer = ByteArray(4096)
@@ -191,7 +193,7 @@ class VoidVpnService : VpnService() {
 
             buildIpv4UdpPacket(
                 payload = responseBuffer.copyOf(responsePacket.length),
-                srcIp = byteArrayOf(1, 1, 1, 1),
+                srcIp = upstream.address,
                 dstIp = clientIp,
                 srcPort = 53,
                 dstPort = clientPort

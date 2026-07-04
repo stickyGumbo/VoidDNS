@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvTotalQueries: TextView
     private lateinit var tvBlockRate: TextView
     private lateinit var tvDomainCount: TextView
+    private lateinit var manageListsButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +56,7 @@ class MainActivity : AppCompatActivity() {
         tvTotalQueries = findViewById<TextView>(R.id.tvTotalQueries)
         tvBlockRate = findViewById<TextView>(R.id.tvBlockRate)
         tvDomainCount = findViewById<TextView>(R.id.tvDomainCount)
+        manageListsButton = findViewById(R.id.manageListsButton)
     }
 
     private fun setupToggleButton() {
@@ -64,6 +66,9 @@ class MainActivity : AppCompatActivity() {
             } else {
                 requestVpnPermission()
             }
+        }
+        manageListsButton.setOnClickListener {
+            startActivity(Intent(this, BlocklistActivity::class.java))
         }
     }
 

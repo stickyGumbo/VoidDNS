@@ -198,5 +198,16 @@
 
         </GridLayout>
 
+        <Button
+            android:id="@+id/manageListsButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Manage Lists"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#3742FA"
+            android:layout_marginBottom="12dp"/>
+
     </LinearLayout>
 </ScrollView>

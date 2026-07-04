@@ -3083,6 +3083,11 @@ id beginning
 id blocking
 id bottom
 id bounce
+id btnAddCustom
+id btnFetchLists
+id btnImportFile
+id btnRemoveCustom
+id btnSaveUpstream
 id buttonPanel
 id cancel_button
 id center
@@ -3151,6 +3156,8 @@ id end
 id endToStart
 id enterAlways
 id enterAlwaysCollapsed
+id etCustomDomain
+id etUpstreamDns
 id exitUntilCollapsed
 id expand_activities_button
 id expanded_menu
@@ -3207,7 +3214,10 @@ id line3
 id linear
 id listMode
 id list_item
+id lvCustomRules
+id lvSources
 id m3_side_sheet
+id manageListsButton
 id marquee
 id masked
 id match_parent
@@ -3307,6 +3317,7 @@ id parent_matrix
 id password_toggle
 id path
 id pathRelative
+id pbFetch
 id peekHeight
 id percent
 id pin
@@ -3434,6 +3445,7 @@ id triangle
 id tvBlockRate
 id tvBlockedCount
 id tvDomainCount
+id tvFetchStatus
 id tvTotalQueries
 id unchecked
 id uniform
@@ -3566,6 +3578,7 @@ layout abc_search_dropdown_item_icons_2line
 layout abc_search_view
 layout abc_select_dialog_material
 layout abc_tooltip
+layout activity_blocklist
 layout activity_main
 layout custom_dialog
 layout design_bottom_navigation_item

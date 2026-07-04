@@ -4,6 +4,17 @@ color ic_launcher_background
 color ic_launcher_foreground
 drawable circle_green
 drawable circle_red
+id btnAddCustom
+id btnFetchLists
+id btnImportFile
+id btnRemoveCustom
+id btnSaveUpstream
+id etCustomDomain
+id etUpstreamDns
+id lvCustomRules
+id lvSources
+id manageListsButton
+id pbFetch
 id statusIndicator
 id statusSubtitle
 id statusTitle
@@ -11,7 +22,9 @@ id toggleButton
 id tvBlockRate
 id tvBlockedCount
 id tvDomainCount
+id tvFetchStatus
 id tvTotalQueries
+layout activity_blocklist
 layout activity_main
 mipmap ic_launcher
 string app_name
