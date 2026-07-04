@@ -53,7 +53,7 @@ class VoidVpnService : VpnService() {
         vpnInterface = Builder()
             .addAddress("10.0.0.2", 32)
             .addDnsServer("10.0.0.2")
-            .addRoute("10.0.0.0", 24)
+            .addRoute("0.0.0.0", 0)
             .setSession("VoidDNS")
             .setMtu(1500)
             .establish()
@@ -74,12 +74,25 @@ class VoidVpnService : VpnService() {
         while (isRunning) {
             try {
                 val length = input.read(packet)
-                if (length < 28) continue
+                if (length < 20) continue
 
-                val response = handleDnsPacket(packet, length)
-                if (response != null) {
-                    output.write(response)
+                val ipHeaderLen = (packet[0].toInt() and 0x0F) * 4
+                val protocol = packet[9].toInt() and 0xFF
+
+                // Only intercept UDP DNS (protocol=17, port=53)
+                if (protocol == 17 && length > ipHeaderLen + 8) {
+                    val dstPort = ((packet[ipHeaderLen + 2].toInt() and 0xFF) shl 8) or
+                            (packet[ipHeaderLen + 3].toInt() and 0xFF)
+                    if (dstPort == 53) {
+                        val response = handleDnsPacket(packet, length)
+                        if (response != null) {
+                            output.write(response)
+                        }
+                        continue
+                    }
                 }
+                // All other packets — write back to tun so they route normally
+                output.write(packet, 0, length)
             } catch (e: Exception) {
                 if (isRunning) Log.e(TAG, "Tunnel error: ${e.message}")
             }
@@ -89,7 +102,7 @@ class VoidVpnService : VpnService() {
     private fun handleDnsPacket(packet: ByteArray, length: Int): ByteArray? {
         val ipHeaderLen = (packet[0].toInt() and 0x0F) * 4
         val protocol = packet[9].toInt() and 0xFF
-        if (protocol != 17) return null // UDP only
+        if (protocol != 17) return null
 
         val srcPort = ((packet[ipHeaderLen].toInt() and 0xFF) shl 8) or
                 (packet[ipHeaderLen + 1].toInt() and 0xFF)
