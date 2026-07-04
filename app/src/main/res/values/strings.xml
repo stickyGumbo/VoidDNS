@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">VoidDNS</string>
+    <string name="status_active">Protection Active</string>
+    <string name="status_inactive">Protection Inactive</string>
+    <string name="btn_start">Start Protection</string>
+    <string name="btn_stop">Stop Protection</string>
+</resources>

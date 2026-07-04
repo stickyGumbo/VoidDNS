@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#0A0A0F</color>
+    <color name="ic_launcher_foreground">#6200EE</color>
+    <string name="app_name">VoidDNS</string>
+    <string name="btn_start">Start Protection</string>
+    <string name="btn_stop">Stop Protection</string>
+    <string name="status_active">Protection Active</string>
+    <string name="status_inactive">Protection Inactive</string>
+    <style name="Theme.VoidDNS" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <item name="colorPrimary">#6200EE</item>
+        <item name="colorPrimaryVariant">#3700B3</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+    </style>
+</resources>

@@ -1,0 +1,54 @@
+[
+    {
+        "merged": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-merged_res-40:/drawable_circle_green.xml.flat",
+        "source": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-main-42:/drawable/circle_green.xml"
+    },
+    {
+        "merged": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-merged_res-40:/mipmap-xhdpi_ic_launcher.xml.flat",
+        "source": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-main-42:/mipmap-xhdpi/ic_launcher.xml"
+    },
+    {
+        "merged": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-merged_res-40:/mipmap-xxhdpi_ic_launcher.xml.flat",
+        "source": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-main-42:/mipmap-xxhdpi/ic_launcher.xml"
+    },
+    {
+        "merged": "com.voiddns.app-merged_res-40:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "com.voiddns.app-main-42:/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-merged_res-40:/drawable_circle_red.xml.flat",
+        "source": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-main-42:/drawable/circle_red.xml"
+    },
+    {
+        "merged": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-merged_res-40:/mipmap-hdpi_ic_launcher.xml.flat",
+        "source": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-main-42:/mipmap-hdpi/ic_launcher.xml"
+    },
+    {
+        "merged": "com.voiddns.app-merged_res-40:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "com.voiddns.app-main-42:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.voiddns.app-merged_res-40:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "com.voiddns.app-main-42:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.voiddns.app-merged_res-40:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "com.voiddns.app-main-42:/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.voiddns.app-merged_res-40:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "com.voiddns.app-main-42:/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-merged_res-40:/mipmap-mdpi_ic_launcher.xml.flat",
+        "source": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-main-42:/mipmap-mdpi/ic_launcher.xml"
+    },
+    {
+        "merged": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-merged_res-40:/mipmap-xxxhdpi_ic_launcher.xml.flat",
+        "source": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-main-42:/mipmap-xxxhdpi/ic_launcher.xml"
+    },
+    {
+        "merged": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-merged_res-40:/layout_activity_main.xml.flat",
+        "source": "/home/codespace/.gradle/daemon/8.4/com.voiddns.app-main-42:/layout/activity_main.xml"
+    }
+]
