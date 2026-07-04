@@ -60,7 +60,6 @@ class VoidVpnService : VpnService() {
         vpnInterface = Builder()
             .addAddress("10.0.0.2", 32)
             .addDnsServer("10.0.0.2")
-            .addRoute("0.0.0.0", 0)
             .setSession("VoidDNS")
             .setMtu(1500)
             .establish()
@@ -90,9 +89,8 @@ class VoidVpnService : VpnService() {
 
                 val protocol = packet[9].toInt() and 0xFF
                 when (protocol) {
-                    6 -> handleTcpPacket(packet, length, ipHeaderLen, output)
                     17 -> handleUdpPacket(packet, length, ipHeaderLen, output)
-                    else -> output.write(packet, 0, length)
+                    else -> continue
                 }
             } catch (e: Exception) {
                 if (isRunning) Log.e(TAG, "Tunnel error: ${e.message}")
@@ -114,10 +112,8 @@ class VoidVpnService : VpnService() {
             if (dnsResponse != null) {
                 output.write(dnsResponse)
             }
-            return
         }
-
-        forwardUdpPacket(payload, srcIp, dstIp, srcPort, dstPort, output)
+        // For non-DNS UDP we do not touch the packet — let Android handle it via real interface.
     }
 
     private fun handleDnsPacket(
