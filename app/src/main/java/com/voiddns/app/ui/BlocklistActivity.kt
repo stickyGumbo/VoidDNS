@@ -36,7 +36,13 @@ class BlocklistActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_blocklist)
 
-        blocklistManager = BlocklistManager.getInstance(this)
+        try {
+            blocklistManager = BlocklistManager.getInstance(this)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Failed to initialize blocklist manager: ${e.message}", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
 
         lvSources = findViewById(R.id.lvSources)
         lvCustom = findViewById(R.id.lvCustomRules)

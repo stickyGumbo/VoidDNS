@@ -3,6 +3,7 @@ package com.voiddns.app.ui
 import android.content.Intent
 import com.voiddns.app.R
 import android.net.VpnService
+import android.widget.Toast
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -68,7 +69,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
         manageListsButton.setOnClickListener {
-            startActivity(Intent(this, BlocklistActivity::class.java))
+            try {
+                startActivity(Intent(this, BlocklistActivity::class.java))
+            } catch (e: Exception) {
+                Toast.makeText(this, "Failed to open Manage Lists: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
     }
 
