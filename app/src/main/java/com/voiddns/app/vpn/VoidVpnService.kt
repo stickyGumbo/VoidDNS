@@ -34,7 +34,7 @@ class VoidVpnService : VpnService() {
 
     override fun onCreate() {
         super.onCreate()
-        dnsEngine = DnsEngine(BlocklistManager.getInstance(this))
+        dnsEngine = DnsEngine(BlocklistManager.getInstance(this), this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
