@@ -236,6 +236,7 @@ class VoidVpnService : VpnService() {
         vpnInterface?.close()
         vpnInterface = null
         stopForeground(STOP_FOREGROUND_REMOVE)
+        com.voiddns.app.stats.StatsManager.getInstance(this).persistSession()
         stopSelf()
     }
 
