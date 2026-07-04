@@ -10,13 +10,19 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 import com.voiddns.app.blocklist.BlocklistManager
 import com.voiddns.app.ui.MainActivity
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.nio.ByteBuffer
+import java.util.concurrent.ConcurrentHashMap
 
 class VoidVpnService : VpnService() {
 
@@ -30,6 +36,7 @@ class VoidVpnService : VpnService() {
     private var vpnInterface: ParcelFileDescriptor? = null
     private var serviceJob: Job? = null
     private lateinit var blocklistManager: BlocklistManager
+    private val tcpConnections = ConcurrentHashMap<String, TcpForwarder>()
 
     override fun onCreate() {
         super.onCreate()
@@ -74,54 +81,164 @@ class VoidVpnService : VpnService() {
         while (isRunning) {
             try {
                 val length = input.read(packet)
-                if (length < 20) continue
+                if (length <= 0 || length < 20) continue
 
                 val ipHeaderLen = (packet[0].toInt() and 0x0F) * 4
-                val protocol = packet[9].toInt() and 0xFF
-
-                // Only intercept UDP DNS (protocol=17, port=53)
-                if (protocol == 17 && length > ipHeaderLen + 8) {
-                    val dstPort = ((packet[ipHeaderLen + 2].toInt() and 0xFF) shl 8) or
-                            (packet[ipHeaderLen + 3].toInt() and 0xFF)
-                    if (dstPort == 53) {
-                        val response = handleDnsPacket(packet, length)
-                        if (response != null) {
-                            output.write(response)
-                        }
-                        continue
-                    }
+                if (ipHeaderLen < 20 || length < ipHeaderLen + 8) {
+                    continue
                 }
-                // All other packets — write back to tun so they route normally
-                output.write(packet, 0, length)
+
+                val protocol = packet[9].toInt() and 0xFF
+                when (protocol) {
+                    6 -> handleTcpPacket(packet, length, ipHeaderLen, output)
+                    17 -> handleUdpPacket(packet, length, ipHeaderLen, output)
+                    else -> output.write(packet, 0, length)
+                }
             } catch (e: Exception) {
                 if (isRunning) Log.e(TAG, "Tunnel error: ${e.message}")
             }
         }
     }
 
-    private fun handleDnsPacket(packet: ByteArray, length: Int): ByteArray? {
-        val ipHeaderLen = (packet[0].toInt() and 0x0F) * 4
-        val protocol = packet[9].toInt() and 0xFF
-        if (protocol != 17) return null
-
-        val srcPort = ((packet[ipHeaderLen].toInt() and 0xFF) shl 8) or
-                (packet[ipHeaderLen + 1].toInt() and 0xFF)
-        val dstPort = ((packet[ipHeaderLen + 2].toInt() and 0xFF) shl 8) or
-                (packet[ipHeaderLen + 3].toInt() and 0xFF)
-        if (dstPort != 53) return null // DNS only
-
+    private fun handleUdpPacket(packet: ByteArray, length: Int, ipHeaderLen: Int, output: FileOutputStream) {
         val srcIp = packet.copyOfRange(12, 16)
-        val dnsPayload = packet.copyOfRange(ipHeaderLen + 8, length)
-        val domain = extractDomain(dnsPayload) ?: return null
+        val dstIp = packet.copyOfRange(16, 20)
+        val srcPort = ((packet[ipHeaderLen].toInt() and 0xFF) shl 8) or
+            (packet[ipHeaderLen + 1].toInt() and 0xFF)
+        val dstPort = ((packet[ipHeaderLen + 2].toInt() and 0xFF) shl 8) or
+            (packet[ipHeaderLen + 3].toInt() and 0xFF)
+        val payload = packet.copyOfRange(ipHeaderLen + 8, length)
 
-        Log.d(TAG, "DNS: $domain")
+        if (dstPort == 53) {
+            val dnsResponse = handleDnsPacket(payload, srcIp, dstIp, srcPort, dstPort)
+            if (dnsResponse != null) {
+                output.write(dnsResponse)
+            }
+            return
+        }
+
+        forwardUdpPacket(payload, srcIp, dstIp, srcPort, dstPort, output)
+    }
+
+    private fun handleDnsPacket(
+        payload: ByteArray,
+        clientIp: ByteArray,
+        serverIp: ByteArray,
+        clientPort: Int,
+        serverPort: Int
+    ): ByteArray? {
+        val domain = extractDomain(payload) ?: return null
+        Log.d(TAG, "DNS query for $domain")
 
         return if (blocklistManager.isBlocked(domain)) {
-            Log.d(TAG, "BLOCKED: $domain")
+            Log.d(TAG, "Blocked DNS: $domain")
             blocklistManager.incrementBlockedCount()
-            buildNxDomain(dnsPayload, srcIp, srcPort)
+            buildNxDomain(payload, clientIp, clientPort)
         } else {
-            forwardDns(dnsPayload, srcIp, srcPort)
+            forwardDns(payload, clientIp, clientPort, serverIp, serverPort)
+        }
+    }
+
+    private fun forwardUdpPacket(
+        payload: ByteArray,
+        srcIp: ByteArray,
+        dstIp: ByteArray,
+        srcPort: Int,
+        dstPort: Int,
+        output: FileOutputStream
+    ) {
+        try {
+            val socket = DatagramSocket()
+            protect(socket)
+            socket.soTimeout = 5000
+            val remoteAddress = InetAddress.getByAddress(dstIp)
+            socket.send(DatagramPacket(payload, payload.size, remoteAddress, dstPort))
+
+            val responseBuffer = ByteArray(4096)
+            val responsePacket = DatagramPacket(responseBuffer, responseBuffer.size)
+            socket.receive(responsePacket)
+            socket.close()
+
+            val responsePayload = responseBuffer.copyOf(responsePacket.length)
+            output.write(
+                buildIpv4UdpPacket(
+                    payload = responsePayload,
+                    srcIp = dstIp,
+                    dstIp = srcIp,
+                    srcPort = dstPort,
+                    dstPort = srcPort
+                )
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "UDP forward failed: ${e.message}")
+        }
+    }
+
+    private fun forwardDns(
+        query: ByteArray,
+        clientIp: ByteArray,
+        clientPort: Int,
+        serverIp: ByteArray,
+        serverPort: Int
+    ): ByteArray? {
+        return try {
+            val socket = DatagramSocket()
+            protect(socket)
+            socket.soTimeout = 5000
+            val upstream = InetAddress.getByAddress(byteArrayOf(1, 1, 1, 1))
+            socket.send(DatagramPacket(query, query.size, upstream, 53))
+
+            val responseBuffer = ByteArray(4096)
+            val responsePacket = DatagramPacket(responseBuffer, responseBuffer.size)
+            socket.receive(responsePacket)
+            socket.close()
+
+            buildIpv4UdpPacket(
+                payload = responseBuffer.copyOf(responsePacket.length),
+                srcIp = byteArrayOf(1, 1, 1, 1),
+                dstIp = clientIp,
+                srcPort = 53,
+                dstPort = clientPort
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "DNS forward failed: ${e.message}")
+            null
+        }
+    }
+
+    private fun buildNxDomain(query: ByteArray, clientIp: ByteArray, clientPort: Int): ByteArray {
+        val response = query.copyOf()
+        response[2] = (response[2].toInt() or 0x80).toByte()
+        response[3] = 0x03.toByte()
+        return buildIpv4UdpPacket(
+            payload = response,
+            srcIp = byteArrayOf(1, 1, 1, 1),
+            dstIp = clientIp,
+            srcPort = 53,
+            dstPort = clientPort
+        )
+    }
+
+    private fun handleTcpPacket(packet: ByteArray, length: Int, ipHeaderLen: Int, output: FileOutputStream) {
+        val srcIp = packet.copyOfRange(12, 16)
+        val dstIp = packet.copyOfRange(16, 20)
+        val srcPort = ((packet[ipHeaderLen].toInt() and 0xFF) shl 8) or (packet[ipHeaderLen + 1].toInt() and 0xFF)
+        val dstPort = ((packet[ipHeaderLen + 2].toInt() and 0xFF) shl 8) or (packet[ipHeaderLen + 3].toInt() and 0xFF)
+
+        val dataOffset = ((packet[ipHeaderLen + 12].toInt() and 0xF0) ushr 2)
+        val payloadOffset = ipHeaderLen + dataOffset
+        if (payloadOffset >= length) {
+            return
+        }
+
+        val payload = packet.copyOfRange(payloadOffset, length)
+        val key = tcpConnectionKey(srcIp, srcPort, dstIp, dstPort)
+        val connection = tcpConnections.getOrPut(key) {
+            TcpForwarder(this, output, srcIp, srcPort, dstIp, dstPort).also { it.start() }
+        }
+
+        if (payload.isNotEmpty()) {
+            connection.writePayload(payload)
         }
     }
 
@@ -137,50 +254,12 @@ class VoidVpnService : VpnService() {
                 i += len + 1
             }
             if (sb.isEmpty()) null else sb.toString().lowercase()
-        } catch (e: Exception) { null }
-    }
-
-    private fun forwardDns(query: ByteArray, clientIp: ByteArray, clientPort: Int): ByteArray? {
-        return try {
-            val socket = DatagramSocket()
-            protect(socket)
-            socket.soTimeout = 5000
-
-            val upstream = InetAddress.getByName("1.1.1.1")
-            socket.send(DatagramPacket(query, query.size, upstream, 53))
-
-            val buf = ByteArray(4096)
-            val resp = DatagramPacket(buf, buf.size)
-            socket.receive(resp)
-            socket.close()
-
-            buildIpUdpPacket(
-                payload = buf.copyOf(resp.length),
-                srcIp = byteArrayOf(10, 0, 0, 2),
-                dstIp = clientIp,
-                srcPort = 53,
-                dstPort = clientPort
-            )
         } catch (e: Exception) {
-            Log.e(TAG, "Forward error: ${e.message}")
             null
         }
     }
 
-    private fun buildNxDomain(query: ByteArray, clientIp: ByteArray, clientPort: Int): ByteArray {
-        val response = query.copyOf()
-        response[2] = (response[2].toInt() or 0x80).toByte()
-        response[3] = 0x03.toByte()
-        return buildIpUdpPacket(
-            payload = response,
-            srcIp = byteArrayOf(10, 0, 0, 2),
-            dstIp = clientIp,
-            srcPort = 53,
-            dstPort = clientPort
-        )
-    }
-
-    private fun buildIpUdpPacket(
+    private fun buildIpv4UdpPacket(
         payload: ByteArray,
         srcIp: ByteArray,
         dstIp: ByteArray,
@@ -188,29 +267,66 @@ class VoidVpnService : VpnService() {
         dstPort: Int
     ): ByteArray {
         val totalLen = 20 + 8 + payload.size
-        val buf = ByteBuffer.allocate(totalLen)
+        val buffer = ByteBuffer.allocate(totalLen)
 
-        // IP header
-        buf.put(0x45.toByte())
-        buf.put(0x00.toByte())
-        buf.putShort(totalLen.toShort())
-        buf.putShort(0)
-        buf.putShort(0x4000.toShort())
-        buf.put(0x40.toByte())
-        buf.put(0x11.toByte())
-        buf.putShort(0) // checksum - 0 is fine for VPN tun
-        buf.put(srcIp)
-        buf.put(dstIp)
+        buffer.put(0x45.toByte())
+        buffer.put(0x00.toByte())
+        buffer.putShort(totalLen.toShort())
+        buffer.putShort(0)
+        buffer.putShort(0x4000.toShort())
+        buffer.put(0x40.toByte())
+        buffer.put(0x11.toByte())
+        buffer.putShort(0)
+        buffer.put(srcIp)
+        buffer.put(dstIp)
 
-        // UDP header
-        buf.putShort(srcPort.toShort())
-        buf.putShort(dstPort.toShort())
-        buf.putShort((8 + payload.size).toShort())
-        buf.putShort(0)
-
-        buf.put(payload)
-        return buf.array()
+        buffer.putShort(srcPort.toShort())
+        buffer.putShort(dstPort.toShort())
+        buffer.putShort((8 + payload.size).toShort())
+        buffer.putShort(0)
+        buffer.put(payload)
+        return buffer.array()
     }
+
+    private fun buildIpv4TcpPacket(
+        payload: ByteArray,
+        srcIp: ByteArray,
+        dstIp: ByteArray,
+        srcPort: Int,
+        dstPort: Int
+    ): ByteArray {
+        val totalLen = 20 + 20 + payload.size
+        val buffer = ByteBuffer.allocate(totalLen)
+
+        buffer.put(0x45.toByte())
+        buffer.put(0x00.toByte())
+        buffer.putShort(totalLen.toShort())
+        buffer.putShort(0)
+        buffer.putShort(0x4000.toShort())
+        buffer.put(0x06.toByte())
+        buffer.put(0x06.toByte())
+        buffer.putShort(0)
+        buffer.put(srcIp)
+        buffer.put(dstIp)
+
+        buffer.putShort(srcPort.toShort())
+        buffer.putShort(dstPort.toShort())
+        buffer.putInt(0)
+        buffer.putInt(0)
+        buffer.put(0x50.toByte())
+        buffer.put(0x10.toByte())
+        buffer.putShort(0)
+        buffer.put(payload)
+        return buffer.array()
+    }
+
+    private fun tcpConnectionKey(srcIp: ByteArray, srcPort: Int, dstIp: ByteArray, dstPort: Int): String {
+        val left = "${InetAddress.getByAddress(srcIp).hostAddress}:$srcPort"
+        val right = "${InetAddress.getByAddress(dstIp).hostAddress}:$dstPort"
+        return listOf(left, right).sorted().joinToString("::")
+    }
+
+    private fun ipToString(address: ByteArray): String = InetAddress.getByAddress(address).hostAddress
 
     private fun buildNotification(): Notification {
         val stopIntent = PendingIntent.getService(
@@ -246,6 +362,8 @@ class VoidVpnService : VpnService() {
     private fun stopVpn() {
         isRunning = false
         serviceJob?.cancel()
+        tcpConnections.values.forEach { it.close() }
+        tcpConnections.clear()
         vpnInterface?.close()
         vpnInterface = null
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -256,5 +374,74 @@ class VoidVpnService : VpnService() {
     override fun onDestroy() {
         stopVpn()
         super.onDestroy()
+    }
+
+    private inner class TcpForwarder(
+        private val service: VoidVpnService,
+        private val output: FileOutputStream,
+        private val clientIp: ByteArray,
+        private val clientPort: Int,
+        private val serverIp: ByteArray,
+        private val serverPort: Int
+    ) {
+        private val socket = Socket()
+
+        fun start() {
+            CoroutineScope(Dispatchers.IO).launch {
+                runRemoteToTun()
+            }
+        }
+
+        fun writePayload(payload: ByteArray) {
+            if (payload.isEmpty()) return
+            try {
+                if (!socket.isConnected) {
+                    protect(socket)
+                    socket.connect(InetSocketAddress(InetAddress.getByAddress(serverIp), serverPort), 5000)
+                    socket.soTimeout = 1000
+                    socket.keepAlive = true
+                }
+                socket.getOutputStream().write(payload)
+                socket.getOutputStream().flush()
+            } catch (e: Exception) {
+                Log.e(TAG, "TCP write failed: ${e.message}")
+                close()
+            }
+        }
+
+        private suspend fun runRemoteToTun() {
+            try {
+                protect(socket)
+                socket.connect(InetSocketAddress(InetAddress.getByAddress(serverIp), serverPort), 5000)
+                socket.soTimeout = 1000
+                socket.keepAlive = true
+
+                val buffer = ByteArray(4096)
+                while (isRunning && !socket.isClosed) {
+                    val read = socket.getInputStream().read(buffer)
+                    if (read <= 0) break
+                    val packet = buildIpv4TcpPacket(
+                        payload = buffer.copyOf(read),
+                        srcIp = serverIp,
+                        dstIp = clientIp,
+                        srcPort = serverPort,
+                        dstPort = clientPort
+                    )
+                    output.write(packet)
+                }
+            } catch (e: Exception) {
+                if (isRunning) Log.e(TAG, "TCP relay stopped: ${e.message}")
+            } finally {
+                close()
+            }
+        }
+
+        fun close() {
+            try {
+                socket.close()
+            } catch (_: Exception) {
+            }
+            tcpConnections.entries.removeIf { it.value === this }
+        }
     }
 }
