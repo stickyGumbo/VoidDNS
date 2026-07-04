@@ -26,15 +26,17 @@ class StatsManager private constructor(private val context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    // Read live counts directly from BlocklistManager
     fun getTotalBlocked(): Int {
-        val sessionBlocked = BlocklistManager.getInstance(context).getBlockedCount()
-        return prefs.getInt(KEY_TOTAL_BLOCKED, 0) + sessionBlocked
+        // Read directly from the SAME singleton instance
+        val session = BlocklistManager.getInstance(context).getBlockedCount()
+        val persisted = prefs.getInt(KEY_TOTAL_BLOCKED, 0)
+        return persisted + session
     }
 
     fun getTotalQueries(): Int {
-        val sessionQueries = BlocklistManager.getInstance(context).getTotalQueries()
-        return prefs.getInt(KEY_TOTAL_QUERIES, 0) + sessionQueries
+        val session = BlocklistManager.getInstance(context).getTotalQueries()
+        val persisted = prefs.getInt(KEY_TOTAL_QUERIES, 0)
+        return persisted + session
     }
 
     fun getBlockRate(): Float {
@@ -43,13 +45,11 @@ class StatsManager private constructor(private val context: Context) {
         return (getTotalBlocked().toFloat() / total) * 100
     }
 
-    // Call this when VPN stops to persist session stats
     fun persistSession() {
-        val blocked = BlocklistManager.getInstance(context).getBlockedCount()
-        val queries = BlocklistManager.getInstance(context).getTotalQueries()
+        val bm = BlocklistManager.getInstance(context)
         prefs.edit()
-            .putInt(KEY_TOTAL_BLOCKED, prefs.getInt(KEY_TOTAL_BLOCKED, 0) + blocked)
-            .putInt(KEY_TOTAL_QUERIES, prefs.getInt(KEY_TOTAL_QUERIES, 0) + queries)
+            .putInt(KEY_TOTAL_BLOCKED, prefs.getInt(KEY_TOTAL_BLOCKED, 0) + bm.getBlockedCount())
+            .putInt(KEY_TOTAL_QUERIES, prefs.getInt(KEY_TOTAL_QUERIES, 0) + bm.getTotalQueries())
             .apply()
     }
 

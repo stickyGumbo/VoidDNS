@@ -7,14 +7,16 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
 
 class BlocklistManager private constructor(private val context: Context) {
 
     companion object {
         const val TAG = "BlocklistManager"
 
-        // All the best free blocklists
+        // GLOBAL static counters — shared across all instances
+        val globalBlockedCount = AtomicInteger(0)
+        val globalTotalQueries = AtomicInteger(0)
+
         val BLOCKLIST_SOURCES = mapOf(
             "StevenBlack" to "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
             "AdGuard" to "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
@@ -34,10 +36,7 @@ class BlocklistManager private constructor(private val context: Context) {
         }
     }
 
-    // Trie for ultra fast domain lookup
     private val trie = DomainTrie()
-    private val blockedCount = AtomicInteger(0)
-    private val totalQueries = AtomicInteger(0)
     private var isLoaded = false
 
     fun initialize() {
@@ -52,16 +51,16 @@ class BlocklistManager private constructor(private val context: Context) {
     }
 
     fun isBlocked(domain: String): Boolean {
-        totalQueries.incrementAndGet()
+        globalTotalQueries.incrementAndGet()
         return trie.contains(domain)
     }
 
     fun incrementBlockedCount() {
-        blockedCount.incrementAndGet()
+        globalBlockedCount.incrementAndGet()
     }
 
-    fun getBlockedCount(): Int = blockedCount.get()
-    fun getTotalQueries(): Int = totalQueries.get()
+    fun getBlockedCount(): Int = globalBlockedCount.get()
+    fun getTotalQueries(): Int = globalTotalQueries.get()
     fun getDomainCount(): Int = trie.size()
 
     private fun loadFromDisk() {
@@ -102,43 +101,31 @@ class BlocklistManager private constructor(private val context: Context) {
             }
         }
 
-        // Save to disk
         val file = File(context.filesDir, "blocklist.txt")
         file.writeText(allDomains.joinToString("\n"))
-
-        // Load into trie
         allDomains.forEach { trie.insert(it) }
         Log.d(TAG, "Total domains loaded: ${trie.size()}")
     }
 
     fun addCustomRule(domain: String) {
         trie.insert(domain.lowercase().trim())
-        saveCustomRule(domain)
-    }
-
-    private fun saveCustomRule(domain: String) {
-        val file = File(context.filesDir, "custom_rules.txt")
-        file.appendText("$domain\n")
+        File(context.filesDir, "custom_rules.txt").appendText("$domain\n")
     }
 
     private fun parseLine(line: String): String? {
         val trimmed = line.trim()
         if (trimmed.isEmpty() || trimmed.startsWith("#")) return null
-
         return when {
-            // hosts file format: "0.0.0.0 domain.com"
             trimmed.startsWith("0.0.0.0 ") -> {
-                val domain = trimmed.substringAfter("0.0.0.0 ").trim()
-                if (isValidDomain(domain)) domain else null
+                val d = trimmed.substringAfter("0.0.0.0 ").trim()
+                if (isValidDomain(d)) d else null
             }
             trimmed.startsWith("127.0.0.1 ") -> {
-                val domain = trimmed.substringAfter("127.0.0.1 ").trim()
-                if (isValidDomain(domain)) domain else null
+                val d = trimmed.substringAfter("127.0.0.1 ").trim()
+                if (isValidDomain(d)) d else null
             }
-            // plain domain format
-            isValidDomain(trimmed) -> trimmed
-            // wildcard format *.domain.com
             trimmed.startsWith("*.") -> trimmed.substring(2)
+            isValidDomain(trimmed) -> trimmed
             else -> null
         }
     }
